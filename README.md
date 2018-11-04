@@ -34,6 +34,8 @@ For comparison, the PCB layout looks like this:
 
 ## Caveats
 
+  * If the pin numbering on KiCAD modules does not start with pin 1 and continue consecutively until last pin with an integer name, the pin numbering on the boardview will be wrong.
+  * Similarly to the previous caveat, the format does not allow to represent pin names such as `PAD` (on QFN packages) or `A0` (on BGA packages) correctly. These will be assigned arbitrary (but consistent) numbers instead.
   * There is an unknown field in the ".brd" files, written as `0`. It is ignored by OpenBoardView, but might actually mean something.
   * The `NAILS:` section, used for describing testpoint placement, is not emitted. Open an issue if you have enough testpoints that it is useful for you.
 

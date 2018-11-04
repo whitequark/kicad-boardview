@@ -1,7 +1,9 @@
 #!/usr/bin/env python2.7
 
 import sys
+import re
 import argparse
+
 import pcbnew
 
 
@@ -19,6 +21,12 @@ def y_coord(obj, maxy, y):
         return coord(maxy - y)
     else:
         return coord(y)
+
+def pad_sort_key(name):
+    if re.match(r"^\d+$", name):
+        return (0, int(name))
+    else:
+        return (1, name)
 
 
 def convert(pcb, brd):
@@ -88,7 +96,7 @@ def convert(pcb, brd):
     while module_list:
         if not skip_module(module_list):
             pads_list = module_list.PadsList()
-            for pad in sorted(pads_list, key=lambda pad: pad.GetName()):
+            for pad in sorted(pads_list, key=lambda pad: pad_sort_key(pad.GetName())):
                 pads.append(pad)
         module_list = module_list.Next()
 
