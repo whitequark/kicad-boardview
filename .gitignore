@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+# openboardview database
+*.sqlite3
+# kicad project
+*.pro
