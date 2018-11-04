@@ -7,8 +7,15 @@ import argparse
 import pcbnew
 
 
-def skip_module(module):
-    return module.GetReference() == "REF**"
+def skip_module(module, tp=False):
+    refdes = module.GetReference()
+    if refdes == "REF**":
+        return True
+    if tp and not refdes.startswith("TP"):
+        return True
+    if not tp and refdes.startswith("TP"):
+        return True
+    return False
 
 
 def coord(nanometers):
@@ -106,6 +113,28 @@ def convert(pcb, brd):
         pad_pos = pad.GetPosition()
         brd.write("{x} {y} {net} {side}\n"
                   .format(x=coord(pad_pos.x),
+                          y=y_coord(pad, outline_maxy, pad_pos.y),
+                          net=pad.GetNetCode(),
+                          side=1 + pad.IsFlipped()))
+    brd.write("\n")
+
+    # Nails
+    module_list = pcb.GetModules()
+    testpoints = []
+    while module_list:
+        if not skip_module(module_list, tp=True):
+            pads_list = module_list.PadsList()
+            for pad in sorted(pads_list, key=lambda pad: pad_sort_key(pad.GetName())):
+                testpoints.append((module_list, pad))
+        module_list = module_list.Next()
+
+    brd.write("NAILS: {count}\n"
+              .format(count=len(testpoints)))
+    for module, pad in testpoints:
+        pad_pos = pad.GetPosition()
+        brd.write("{probe} {x} {y} {net} {side}\n"
+                  .format(probe=module.GetReference()[2:],
+                          x=coord(pad_pos.x),
                           y=y_coord(pad, outline_maxy, pad_pos.y),
                           net=pad.GetNetCode(),
                           side=1 + pad.IsFlipped()))
