@@ -8,7 +8,7 @@ The _Boardview_ file formats do not typically have a specification or even a nam
 
 ## Prerequisites
 
-_KiCAD to Boardview exporter_ uses the [pcbnew plugin interface][pcbplugin]. It requires Python 2.7 with KiCAD libraries installed in the Python search path.
+_KiCAD to Boardview exporter_ uses the [pcbnew plugin interface][pcbplugin]. It requires Python with KiCAD libraries installed in the Python search path.
 
 [pcbplugin]: https://kicad.readthedocs.io/en/latest/Documentation/development/pcbnew-plugins/
 
