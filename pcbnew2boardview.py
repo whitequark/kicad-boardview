@@ -8,12 +8,12 @@ import pcbnew
 
 
 def skip_module(module, tp=False):
-    refdes = module.GetReference()
+    refdes = module.Reference()
     if refdes == "REF**":
         return True
-    if tp and not refdes.startswith("TP"):
+    if tp and not refdes.GetText().startswith("TP"):
         return True
-    if not tp and refdes.startswith("TP"):
+    if not tp and refdes.GetText().startswith("TP"):
         return True
     return False
 
@@ -39,9 +39,9 @@ def pad_sort_key(name):
 def convert(pcb, brd):
     # Board outline
     outlines = pcbnew.SHAPE_POLY_SET()
-    pcb.GetBoardPolygonOutlines(outlines, "")
+    pcb.GetBoardPolygonOutlines(outlines)
     outline = outlines.Outline(0)
-    outline_points = [outline.Point(n) for n in range(outline.PointCount())]
+    outline_points = [outline.GetPoint(n) for n in range(outline.PointCount())]
     outline_maxx = max(map(lambda p: p.x, outline_points))
     outline_maxy = max(map(lambda p: p.y, outline_points))
 
@@ -69,17 +69,16 @@ def convert(pcb, brd):
               .format(count=len(net_items)))
     for net_item in net_items:
         brd.write("{code} {name}\n"
-                  .format(code=net_item.GetNet(),
+                  .format(code=net_item.GetNetCode(),
                           name=net_item.GetNetname()))
     brd.write("\n")
 
     # Parts
-    module_list = pcb.GetModules()
+    module_list = pcb.GetFootprints()
     modules = []
-    while module_list:
-        if not skip_module(module_list):
-            modules.append(module_list)
-        module_list = module_list.Next()
+    for module in module_list:
+        if not skip_module(module):
+            modules.append(module)
 
     brd.write("PARTS: {count}\n"
               .format(count=len(modules)))
@@ -87,7 +86,7 @@ def convert(pcb, brd):
     for module in modules:
         module_bbox = module.GetBoundingBox()
         brd.write("{ref} {x1} {y1} {x2} {y2} {pin} {side}\n"
-                  .format(ref=module.GetReference(),
+                  .format(ref=module.Reference().GetText(),
                           x1 =coord(module_bbox.GetLeft()),
                           y1 =y_coord(module, outline_maxy, module_bbox.GetTop()),
                           x2 =coord(module_bbox.GetRight()),
@@ -98,14 +97,13 @@ def convert(pcb, brd):
     brd.write("\n")
 
     # Pins
-    module_list = pcb.GetModules()
+    module_list = pcb.GetFootprints()
     pads = []
-    while module_list:
-        if not skip_module(module_list):
-            pads_list = module_list.PadsList()
+    for module in module_list:
+        if not skip_module(module):
+            pads_list = module.Pads()
             for pad in sorted(pads_list, key=lambda pad: pad_sort_key(pad.GetName())):
                 pads.append(pad)
-        module_list = module_list.Next()
 
     brd.write("PINS: {count}\n"
               .format(count=len(pads)))
@@ -119,14 +117,13 @@ def convert(pcb, brd):
     brd.write("\n")
 
     # Nails
-    module_list = pcb.GetModules()
+    module_list = pcb.GetFootprints()
     testpoints = []
-    while module_list:
-        if not skip_module(module_list, tp=True):
-            pads_list = module_list.PadsList()
+    for module in module_list:
+        if not skip_module(module, tp=True):
+            pads_list = module.Pads()
             for pad in sorted(pads_list, key=lambda pad: pad_sort_key(pad.GetName())):
-                testpoints.append((module_list, pad))
-        module_list = module_list.Next()
+                testpoints.append((module, pad))
 
     brd.write("NAILS: {count}\n"
               .format(count=len(testpoints)))
