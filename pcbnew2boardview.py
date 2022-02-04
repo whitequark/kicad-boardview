@@ -86,7 +86,7 @@ def convert(pcb, brd):
     for module in modules:
         module_bbox = module.GetBoundingBox()
         brd.write("{ref} {x1} {y1} {x2} {y2} {pin} {side}\n"
-                  .format(ref=module.Reference(),
+                  .format(ref=module.Reference().GetText(),
                           x1 =coord(module_bbox.GetLeft()),
                           y1 =y_coord(module, outline_maxy, module_bbox.GetTop()),
                           x2 =coord(module_bbox.GetRight()),
