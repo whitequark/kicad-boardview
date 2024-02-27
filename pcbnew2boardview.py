@@ -6,6 +6,7 @@ import argparse
 
 import pcbnew
 
+
 def skip_module(module, tp=False):
     refdes = module.Reference()
     if refdes == "REF**":
@@ -16,9 +17,11 @@ def skip_module(module, tp=False):
         return True
     return False
 
+
 def coord(nanometers):
     milliinches = nanometers * 5 // 127000
     return milliinches
+
 
 def y_coord(maxy, y, flipped):
     # Adjust y-coordinate to start from the bottom of the board and account for flipped components
@@ -29,6 +32,7 @@ def pad_sort_key(name):
         return (0, int(name))
     else:
         return (1, name)
+
 
 def convert(pcb, brd):
     # Board outline
@@ -134,6 +138,7 @@ def convert(pcb, brd):
                           side=1 + flipped))
     brd.write("\n")
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -146,5 +151,7 @@ def main():
     args = parser.parse_args()
     convert(pcbnew.LoadBoard(args.kicad_pcb_file), args.brd_file)
 
+
 if __name__ == "__main__":
     main()
+    
