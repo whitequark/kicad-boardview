@@ -23,11 +23,9 @@ def coord(nanometers):
     return milliinches
 
 
-def y_coord(obj, maxy, y):
-    if obj.IsFlipped():
-        return coord(maxy - y)
-    else:
-        return coord(y)
+def y_coord(maxy, y, flipped):
+    # Adjust y-coordinate to start from the bottom of the board and account for flipped components
+    return coord(maxy - y) if not flipped else coord(y)
 
 def pad_sort_key(name):
     if re.match(r"^\d+$", name):
@@ -54,11 +52,11 @@ def convert(pcb, brd):
     for point in outline_points:
         brd.write("{x} {y}\n"
                   .format(x=coord(point.x),
-                          y=coord(point.y)))
+                          y=y_coord(outline_maxy, point.y, False)))
     if outline.IsClosed():
         brd.write("{x} {y}\n"
                   .format(x=coord(outline_points[0].x),
-                          y=coord(outline_points[0].y)))
+                          y=y_coord(outline_maxy, outline_points[0].y, False)))
     brd.write("\n")
 
     # Nets
@@ -85,14 +83,15 @@ def convert(pcb, brd):
     pin_at = 0
     for module in modules:
         module_bbox = module.GetBoundingBox()
+        flipped = module.IsFlipped()
         brd.write("{ref} {x1} {y1} {x2} {y2} {pin} {side}\n"
                   .format(ref=module.Reference().GetText(),
-                          x1 =coord(module_bbox.GetLeft()),
-                          y1 =y_coord(module, outline_maxy, module_bbox.GetTop()),
-                          x2 =coord(module_bbox.GetRight()),
-                          y2 =y_coord(module, outline_maxy, module_bbox.GetBottom()),
+                          x1=coord(module_bbox.GetLeft()),
+                          y1=y_coord(outline_maxy, module_bbox.GetTop(), flipped),
+                          x2=coord(module_bbox.GetRight()),
+                          y2=y_coord(outline_maxy, module_bbox.GetBottom(), flipped),
                           pin=pin_at,
-                          side=1 + module.IsFlipped()))
+                          side=1 + flipped))
         pin_at += module.GetPadCount()
     brd.write("\n")
 
@@ -109,11 +108,12 @@ def convert(pcb, brd):
               .format(count=len(pads)))
     for pad in pads:
         pad_pos = pad.GetPosition()
+        flipped = pad.GetParent().IsFlipped()
         brd.write("{x} {y} {net} {side}\n"
                   .format(x=coord(pad_pos.x),
-                          y=y_coord(pad, outline_maxy, pad_pos.y),
+                          y=y_coord(outline_maxy, pad_pos.y, flipped),
                           net=pad.GetNetCode(),
-                          side=1 + pad.IsFlipped()))
+                          side=1 + flipped))
     brd.write("\n")
 
     # Nails
@@ -129,12 +129,13 @@ def convert(pcb, brd):
               .format(count=len(testpoints)))
     for module, pad in testpoints:
         pad_pos = pad.GetPosition()
+        flipped = pad.GetParent().IsFlipped()
         brd.write("{probe} {x} {y} {net} {side}\n"
                   .format(probe=module.GetReference()[2:],
                           x=coord(pad_pos.x),
-                          y=y_coord(pad, outline_maxy, pad_pos.y),
+                          y=y_coord(outline_maxy, pad_pos.y, flipped),
                           net=pad.GetNetCode(),
-                          side=1 + pad.IsFlipped()))
+                          side=1 + flipped))
     brd.write("\n")
 
 
@@ -152,4 +153,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main() 
