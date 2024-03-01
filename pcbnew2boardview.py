@@ -108,7 +108,7 @@ def convert(pcb, brd):
               .format(count=len(pads)))
     for pad in pads:
         pad_pos = pad.GetPosition()
-        flipped = pad.GetParent().IsFlipped()
+        flipped = pad.IsFlipped()
         brd.write("{x} {y} {net} {side}\n"
                   .format(x=coord(pad_pos.x),
                           y=y_coord(outline_maxy, pad_pos.y, flipped),
@@ -129,7 +129,7 @@ def convert(pcb, brd):
               .format(count=len(testpoints)))
     for module, pad in testpoints:
         pad_pos = pad.GetPosition()
-        flipped = pad.GetParent().IsFlipped()
+        flipped = pad.IsFlipped()
         brd.write("{probe} {x} {y} {net} {side}\n"
                   .format(probe=module.GetReference()[2:],
                           x=coord(pad_pos.x),
@@ -153,4 +153,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()
