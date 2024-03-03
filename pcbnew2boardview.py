@@ -8,7 +8,7 @@ import pcbnew
 
 
 def skip_module(module, tp=False):
-    if len(module.Pads()) == 0:
+    if module.GetPadCount() == 0:
         return True
     refdes = module.Reference().GetText()
     if tp and not refdes.startswith("TP"):
