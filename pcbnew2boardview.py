@@ -8,12 +8,12 @@ import pcbnew
 
 
 def skip_module(module, tp=False):
-    if len(module.Pads()) == 0:
+    refdes = module.Reference()
+    if refdes == "REF**":
         return True
-    refdes = module.Reference().GetText()
-    if tp and not refdes.startswith("TP"):
+    if tp and not refdes.GetText().startswith("TP"):
         return True
-    if not tp and refdes.startswith("TP"):
+    if not tp and refdes.GetText().startswith("TP"):
         return True
     return False
 
