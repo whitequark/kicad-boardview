@@ -34,11 +34,11 @@ def pad_sort_key(pad):
         return ('2',)
     else:
         parts = re.split('([0-9]+)', pad_name)
-        alphanumeric_parts = [text[::-1] if text.isdigit() else text for text in parts if text]
+        alphanumeric_parts = [f"{int(text):09d}" if text.isdigit() else text for text in parts if text]
         return ('1',) + tuple(alphanumeric_parts)
 
 
-def convert(pcb, brd):
+def convert_brd(pcb, brd):
     # Board outline
     outlines = pcbnew.SHAPE_POLY_SET()
     pcb.GetBoardPolygonOutlines(outlines)
@@ -143,6 +143,28 @@ def convert(pcb, brd):
     brd.write("\n")
 
 
+def convert_obdata(pcb, obdata):
+    obdata.write("COMPONENTS_DATA_START\n")
+    obdata.write("### Component Category Value Comment\n")
+    obdata.write("### v = value, p = package, c = manufacturer code, r = rating, m = misc, s = status\n")
+    obdata.write("###\n")
+    
+    for module in pcb.GetFootprints():
+        ref = module.GetReference()
+        package = module.GetFPIDAsString()
+        value = module.GetValue()
+        
+        package = re.sub(r'^.*:', '', package)
+            
+        obdata.write(f"{ref} p {package}\n")
+        if value == "NO-FIT" or value == "DNP":
+            obdata.write(f"{ref} s -\n")
+        obdata.write(f"{ref} v {value}\n")
+        
+    obdata.write("COMPONENTS_DATA_END\n")
+    obdata.write("### END")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -151,9 +173,14 @@ def main():
     parser.add_argument(
         "brd_file", metavar="BRD-FILE", type=argparse.FileType("wt"),
         help="output in .brd format")
+    parser.add_argument(
+        "--obdata", dest="obdata_file", metavar="OBDATA-FILE", type=argparse.FileType("w"),
+        help="output in .obdata format")
 
     args = parser.parse_args()
-    convert(pcbnew.LoadBoard(args.kicad_pcb_file), args.brd_file)
+    convert_brd(pcbnew.LoadBoard(args.kicad_pcb_file), args.brd_file)
+    if args.obdata_file:
+        convert_obdata(board, args.obdata_file)
 
 
 if __name__ == "__main__":
