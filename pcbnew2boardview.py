@@ -28,8 +28,9 @@ def y_coord(maxy, y, flipped):
     return coord(maxy - y) if not flipped else coord(y)
 
 def natural_sort_key(s):
-    return [int(text) if text.isdigit() else text.casefold()
-            for text in re.compile('([0-9]+)').split(s)]
+    is_blank = s.strip() == ''
+    return (is_blank, [int(text) if text.isdigit() else text.casefold()
+                       for text in re.compile('([0-9]+)').split(s)])
 
 
 def convert(pcb, brd):
