@@ -34,7 +34,7 @@ def pad_sort_key(pad):
         return ('2',)
     else:
         parts = re.split('([0-9]+)', pad_name)
-        alphanumeric_parts = [text[::-1] if text.isdigit() else text for text in parts if text]
+        alphanumeric_parts = [f"{int(text):09d}" if text.isdigit() else text for text in parts if text]
         return ('1',) + tuple(alphanumeric_parts)
 
 
