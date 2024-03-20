@@ -33,7 +33,7 @@ def natural_sort_key(s):
                        for text in re.compile('([0-9]+)').split(s)])
 
 
-def convert(pcb, brd):
+def convert_brd(pcb, brd):
     # Board outline
     outlines = pcbnew.SHAPE_POLY_SET()
     pcb.GetBoardPolygonOutlines(outlines)
@@ -138,17 +138,114 @@ def convert(pcb, brd):
     brd.write("\n")
 
 
+def convert_bvr(pcb, bvr):
+    bvr.write("BVRAW_FORMAT_3\n")
+    
+    outlines = pcbnew.SHAPE_POLY_SET()
+    pcb.GetBoardPolygonOutlines(outlines)
+    outline = outlines.Outline(0)
+    outline_points = [outline.GetPoint(n) for n in range(outline.PointCount())]
+    outline_maxx = max(map(lambda p: p.x, outline_points))
+    outline_maxy = max(map(lambda p: p.y, outline_points))
+    
+    module_list = pcb.GetFootprints()
+    modules = []
+    for module in module_list:
+        if not skip_module(module):
+            modules.append(module)
+
+        ref = module.GetReference()
+        flipped = module.IsFlipped()
+        side = "B" if flipped else "T"
+        mount = module.GetTypeName()
+        pads_list = module.Pads()
+        
+        bvr.write("\n")
+        bvr.write(f"PART_NAME {ref}\n")
+        bvr.write(f"   PART_SIDE {side}\n")
+        bvr.write("   PART_ORIGIN 0.000 0.000\n")
+        bvr.write(f"   PART_MOUNT {mount}\n")
+        bvr.write("\n")
+        
+        for pad in sorted(pads_list, key=lambda pad: natural_sort_key(pad.GetName())):
+            pin_num = pad.GetNumber()
+            net = pad.GetNetname()
+            pad_bbox = pad.GetBoundingBox()
+            pad_size = pad.GetSize()
+            
+            x_center = (pad_bbox.GetLeft() + pad_bbox.GetRight()) / 2
+            y_center = (pad_bbox.GetTop() + pad_bbox.GetBottom()) / 2
+            x = coord(x_center)
+            y = y_coord(outline_maxy, y_center, flipped)
+            
+            if flipped:
+                y = coord(outline_maxy - y_center)
+                
+            if pad.GetShape() == pcbnew.PAD_SHAPE_CIRCLE:
+                radius = coord(pad_size.x / 1.6)
+            else:
+                smaller_dimension = min(pad_size.x, pad_size.y)
+                radius = coord(smaller_dimension / 1.6)
+            
+            bvr.write(f"   PIN_ID {ref}-{pin_num}\n")
+            bvr.write(f"      PIN_NUMBER {pin_num}\n")
+            bvr.write(f"      PIN_NAME {pin_num}\n")
+            bvr.write(f"      PIN_SIDE {side}\n")
+            bvr.write(f"      PIN_ORIGIN {x} {y}\n")
+            bvr.write(f"      PIN_RADIUS {radius}\n")
+            bvr.write(f"      PIN_NET {net}\n")
+            bvr.write("      PIN_TYPE 2\n")
+            bvr.write("      PIN_COMMENT\n")
+            bvr.write("   PIN_END\n")
+            bvr.write("\n")
+        
+        bvr.write("PART_END\n")
+        bvr.write("\n")
+        
+        first_point = outline_points[0]
+        outline_raw = ""
+        
+    for point in outline_points:
+        x = coord(point.x)
+        y = y_coord(outline_maxy, point.y, False)
+        outline_raw += (f"{x} {y} ")
+        
+    x = coord(first_point.x)
+    y = y_coord(outline_maxy, first_point.y, False)
+    outline_raw += (f"{x} {y} ")
+        
+    bvr_shape(outline_raw, bvr)
+ 
+
+def bvr_shape(outline_raw, bvr):
+    outline_segments = parse_outline(outline_raw)
+    bvr.write("OUTLINE_SEGMENTED")    
+    for segment in outline_segments:
+        start_x, start_y, end_x, end_y = segment
+        bvr.write(f" {start_x} {start_y} {end_x} {end_y}")
+        
+def parse_outline(outline_raw):
+    outline_points = list(map(float, outline_raw.split()))
+    return [(outline_points[i], outline_points[i+1], outline_points[i+2], outline_points[i+3])
+            for i in range(0, len(outline_points) - 2, 2)]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "kicad_pcb_file", metavar="KICAD-PCB-FILE", type=str,
         help="input in .kicad_pcb format")
     parser.add_argument(
-        "brd_file", metavar="BRD-FILE", type=argparse.FileType("wt"),
+        "brd_file", metavar="BRD-FILE", type=argparse.FileType("w"),
         help="output in .brd format")
+    parser.add_argument(
+        "--bvr_file", metavar="BVR-FILE", type=argparse.FileType("w"),
+        help="output in .bvr format")
 
     args = parser.parse_args()
-    convert(pcbnew.LoadBoard(args.kicad_pcb_file), args.brd_file)
+    convert_brd(pcbnew.LoadBoard(args.kicad_pcb_file), args.brd_file)
+    if args.bvr_file:
+        convert_bvr(board, bvr_file)
 
 
 if __name__ == "__main__":
