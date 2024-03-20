@@ -9,7 +9,7 @@ class Pcbnew2Boardview(pcbnew.ActionPlugin):
     def defaults(self):
         self.name = "Pcbnew to Boardview"
         self.category = "Read PCB"
-        self.description = "Generate Boardview file from KiCad pcb."
+        self.description = "Generate Boardview file from KiCad PCB."
 
     def Run(self):
         kicad_pcb = pcbnew.GetBoard()
