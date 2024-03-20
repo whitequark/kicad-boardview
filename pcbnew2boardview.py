@@ -27,11 +27,15 @@ def y_coord(maxy, y, flipped):
     # Adjust y-coordinate to start from the bottom of the board and account for flipped components
     return coord(maxy - y) if not flipped else coord(y)
 
-def pad_sort_key(name):
-    if re.match(r"^\d+$", name):
-        return (0, int(name))
+def pad_sort_key(pad):
+    pad_name = pad.GetName()
+    
+    if pad_name == "":
+        return ('2',)
     else:
-        return (1, name)
+        parts = re.split('([0-9]+)', pad_name)
+        alphanumeric_parts = [text[::-1] if text.isdigit() else text for text in parts if text]
+        return ('1',) + tuple(alphanumeric_parts)
 
 
 def convert(pcb, brd):
@@ -101,7 +105,7 @@ def convert(pcb, brd):
     for module in module_list:
         if not skip_module(module):
             pads_list = module.Pads()
-            for pad in sorted(pads_list, key=lambda pad: pad_sort_key(pad.GetName())):
+            for pad in sorted(pads_list, key=pad_sort_key):
                 pads.append(pad)
 
     brd.write("PINS: {count}\n"
@@ -122,7 +126,7 @@ def convert(pcb, brd):
     for module in module_list:
         if not skip_module(module, tp=True):
             pads_list = module.Pads()
-            for pad in sorted(pads_list, key=lambda pad: pad_sort_key(pad.GetName())):
+            for pad in sorted(pads_list, key=pad_sort_key):
                 testpoints.append((module, pad))
 
     brd.write("NAILS: {count}\n"
