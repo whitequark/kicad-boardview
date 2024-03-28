@@ -203,31 +203,19 @@ def convert_bvr(pcb, bvr):
         bvr.write("\n")
         
         first_point = outline_points[0]
-        outline_raw = ""
+        outline_pts = ""
         
     for point in outline_points:
         x = coord(point.x)
         y = y_coord(outline_maxy, point.y, False)
-        outline_raw += (f"{x} {y} ")
-        
+        outline_pts += (f" {x} {y}")
+    
     x = coord(first_point.x)
     y = y_coord(outline_maxy, first_point.y, False)
-    outline_raw += (f"{x} {y} ")
-        
-    bvr_shape(outline_raw, bvr)
- 
-
-def bvr_shape(outline_raw, bvr):
-    outline_segments = parse_outline(outline_raw)
-    bvr.write("OUTLINE_SEGMENTED")    
-    for segment in outline_segments:
-        start_x, start_y, end_x, end_y = segment
-        bvr.write(f" {start_x} {start_y} {end_x} {end_y}")
-        
-def parse_outline(outline_raw):
-    outline_points = list(map(float, outline_raw.split()))
-    return [(outline_points[i], outline_points[i+1], outline_points[i+2], outline_points[i+3])
-            for i in range(0, len(outline_points) - 2, 2)]
+    outline_pts += (f" {x} {y}")
+    
+    bvr.write("OUTLINE_POINTS")
+    bvr.write(outline_pts)
 
 
 def main():
