@@ -208,13 +208,13 @@ def convert_bvr(pcb, bvr):
     for point in outline_points:
         x = coord(point.x)
         y = y_coord(outline_maxy, point.y, False)
-        outline_pts += (f" {x} {y}")
+        outline_pts += (f"{x} {y} ")
     
     x = coord(first_point.x)
     y = y_coord(outline_maxy, first_point.y, False)
-    outline_pts += (f" {x} {y}")
+    outline_pts += (f"{x} {y}")
     
-    bvr.write("OUTLINE_POINTS")
+    bvr.write("OUTLINE_POINTS ")
     bvr.write(outline_pts)
 
 
@@ -231,7 +231,8 @@ def main():
         help="output in .bvr format")
 
     args = parser.parse_args()
-    convert_brd(pcbnew.LoadBoard(args.kicad_pcb_file), args.brd_file)
+    board = pcbnew.LoadBoard(args.kicad_pcb_file)
+    convert_brd(board, args.brd_file)
     if args.bvr_file:
         convert_bvr(board, bvr_file)
 
