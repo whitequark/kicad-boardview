@@ -218,6 +218,28 @@ def convert_bvr(pcb, bvr):
     bvr.write(outline_pts)
 
 
+def convert_obdata(pcb, obdata):
+    obdata.write("COMPONENTS_DATA_START\n")
+    obdata.write("### Component Category Value Comment\n")
+    obdata.write("### v = value, p = package, c = manufacturer code, r = rating, m = misc, s = status\n")
+    obdata.write("###\n")
+    
+    for module in pcb.GetFootprints():
+        ref = module.GetReference()
+        package = module.GetFPIDAsString()
+        value = module.GetValue()
+        
+        package = re.sub(r'^.*:', '', package)
+            
+        obdata.write(f"{ref} p {package}\n")
+        if module.IsDNP() or value in ["NO-FIT", "DNP", "NM"]:
+            obdata.write(f"{ref} s -\n")
+        obdata.write(f"{ref} v {value}\n")
+        
+    obdata.write("COMPONENTS_DATA_END\n")
+    obdata.write("### END")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -229,12 +251,17 @@ def main():
     parser.add_argument(
         "--bvr_file", metavar="BVR-FILE", type=argparse.FileType("w"),
         help="output in .bvr format")
+    parser.add_argument(
+        "--obdata", dest="obdata_file", metavar="OBDATA-FILE", type=argparse.FileType("w"),
+        help="output in .obdata format")
 
     args = parser.parse_args()
     board = pcbnew.LoadBoard(args.kicad_pcb_file)
     convert_brd(board, args.brd_file)
     if args.bvr_file:
-        convert_bvr(board, bvr_file)
+        convert_bvr(board, args.bvr_file)
+    if args.obdata_file:
+        convert_obdata(board, args.obdata_file)
 
 
 if __name__ == "__main__":
